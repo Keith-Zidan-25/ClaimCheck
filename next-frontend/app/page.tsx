@@ -24,7 +24,7 @@ const MisinformationDetector = () => {
       if (!inputText.trim()) return;
     
       setIsAnalyzing(true);
-      const result = await fetch(`${process.env.FASTAPI_URL}/fact-check`, {
+      const result = await fetch(`https://claimcheck-c011.onrender.com/fact-check`, {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",
