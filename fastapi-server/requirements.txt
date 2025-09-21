@@ -6,3 +6,4 @@ python-dotenv
 wikipedia-api
 tqdm
 nltk
+scikit-learn

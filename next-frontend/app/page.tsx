@@ -270,6 +270,7 @@ const MisinformationDetector = () => {
               <div className="text-gray-400 text-sm">
                 © 2025 ClaimCheck. Fighting misinformation with AI.
               </div>
+              <a href="https://www.flaticon.com/free-icons/document-access" title="document access icons">Document access icons created by pictranoosa - Flaticon</a>
             </div>
           </div>
         </footer>
