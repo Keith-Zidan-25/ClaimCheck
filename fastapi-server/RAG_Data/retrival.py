@@ -16,13 +16,13 @@ def retrieve_tfidf(query, top_k=5):
     q_vec = tfidf.transform([query])
     cosine_sim = linear_kernel(q_vec, tfidf_matrix).flatten()
     top_idx = cosine_sim.argsort()[::-1][:top_k]
-    return [{"source": "TF-IDF Corpus", "text": doc_list[i]} for i in top_idx]
+    return [{"source": "TF-IDF Corpus", "text": doc_list[i], "url": None } for i in top_idx]
 
 def hybrid_retrieve(claim, top_k=5):
     docs = []
-    docs.extend(retrieve_tfidf(claim, top_k))
-    docs.extend(retrieve_wikipedia(claim, top_k))
-    # docs.extend(retrieve_google_search(claim, top_k))
+    docs.extend(retrieve_tfidf(claim, top_k - 3))
+    docs.extend(retrieve_wikipedia(claim, top_k - 3))
+    docs.extend(retrieve_google_search(claim, top_k - 3))
     # docs.extend(retrieve_gnews(claim, top_k))
     
     seen, unique_docs = set(), []
@@ -30,4 +30,4 @@ def hybrid_retrieve(claim, top_k=5):
         if d["text"] not in seen:
             unique_docs.append(d)
             seen.add(d["text"])
-    return unique_docs[:top_k]
+    return unique_docs[:top_k * 3]

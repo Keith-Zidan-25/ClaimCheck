@@ -40,6 +40,7 @@ def retrieve_google_search(claim, top_k=3):
     }
 
     try:
+        print("Searching Google for more info....")
         resp = requests.get(url, params=params).json()
         items = resp.get("items", [])
         results = []
@@ -49,6 +50,7 @@ def retrieve_google_search(claim, top_k=3):
                 "text": i.get("snippet", ""),
                 "url": i.get("link")
             })
+        print("Google Results: \n",results)
         return results
 
     except Exception as e:

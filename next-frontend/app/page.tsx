@@ -1,12 +1,17 @@
+"use client"
+
 import React, { useState } from 'react';
-import { Search, Shield, AlertTriangle, CheckCircle, Info, Zap, Eye, Users } from 'lucide-react';
+import { Search, Shield, AlertTriangle, CheckCircle, Info, Users, MessageSquare, Link } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface APIResult {
-  credibilityScore: number;
-  riskLevel: string;
-  factChecks: { claim: string; status: string; confidence: number }[];
-  sources: number;
-  similarClaims: number;
+  status: string;
+  correction: string;
+  evidence: {
+    source: string;
+    text: string;
+    url?: string | null | undefined;
+  }[];
 }
 
 const MisinformationDetector = () => {
@@ -15,40 +20,48 @@ const MisinformationDetector = () => {
   const [result, setResult] = useState<APIResult | null>(null);
 
   const analyzeText = async () => {
-    if (!inputText.trim()) return;
+    try {
+      if (!inputText.trim()) return;
     
-    setIsAnalyzing(true);
-    await new Promise(resolve => setTimeout(resolve, 2500));
-    
-    const mockResult = {
-      credibilityScore: Math.floor(Math.random() * 40) + 60,
-      riskLevel: Math.random() > 0.7 ? 'high' : Math.random() > 0.4 ? 'medium' : 'low',
-      factChecks: [
-        { claim: "Climate data statistics", status: "verified", confidence: 0.92 },
-        { claim: "Economic figures mentioned", status: "partially_verified", confidence: 0.78 },
-      ],
-      sources: 3,
-      similarClaims: 12
-    };
-    
-    setResult(mockResult);
-    setIsAnalyzing(false);
+      setIsAnalyzing(true);
+      const result = await fetch(`${process.env.FASTAPI_URL}/fact-check`, {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          claim: inputText,
+        })
+      }).then(response => {
+        if (!response.ok) {
+          throw new Error("Error while fetching response");
+        }
+
+        return response.json();
+      });
+      
+      setResult(result);
+    } catch {
+      alert('There was an error while processing your claim');
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
-  const getRiskColor = (level: string) => {
+  const getStatusColor = (level: string) => {
     switch(level) {
-      case 'high': return 'text-red-500 bg-red-50 border-red-200';
-      case 'medium': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-      case 'low': return 'text-green-600 bg-green-50 border-green-200';
+      case 'REFUTED': return 'text-red-500 bg-red-50 border-red-200';
+      case 'INSUFFICIENT': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+      case 'SUPPORTED': return 'text-green-600 bg-green-50 border-green-200';
       default: return 'text-gray-600 bg-gray-50 border-gray-200';
     }
   };
 
-  const getRiskIcon = (level: string) => {
+  const getStatusIcon = (level: string) => {
     switch(level) {
-      case 'high': return <AlertTriangle className="w-5 h-5" />;
-      case 'medium': return <Info className="w-5 h-5" />;
-      case 'low': return <CheckCircle className="w-5 h-5" />;
+      case 'REFUTED': return <AlertTriangle className="w-5 h-5" />;
+      case 'INSUFFICIENT': return <Info className="w-5 h-5" />;
+      case 'SUPPORTED': return <CheckCircle className="w-5 h-5" />;
       default: return <Shield className="w-5 h-5" />;
     }
   };
@@ -71,12 +84,13 @@ const MisinformationDetector = () => {
                 <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
                   <Shield className="w-6 h-6 text-white" />
                 </div>
-                <h1 className="text-2xl font-bold text-white">TruthGuard</h1>
+                <h1 className="text-2xl font-bold text-white">ClaimCheck</h1>
               </div>
               <nav className="hidden md:flex space-x-8">
-                <a href="#" className="text-gray-300 hover:text-white transition-colors">About</a>
-                <a href="#" className="text-gray-300 hover:text-white transition-colors">How it Works</a>
-                <a href="#" className="text-gray-300 hover:text-white transition-colors">API</a>
+                <a href="#" className="text-gray-300 hover:text-white transition-colors" onClick={() => alert('Comming Soon')}>
+                  About</a>
+                <a href="/doc" className="text-gray-300 hover:text-white transition-colors">How it Works</a>
+                <a href="#" className="text-gray-300 hover:text-white transition-colors" onClick={() => alert('Comming Soon')}>API</a>
               </nav>
             </div>
           </div>
@@ -133,62 +147,62 @@ const MisinformationDetector = () => {
               {/* Results Section */}
               {result && (
                 <div className="mt-8 space-y-6 animate-fade-in">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Credibility Score */}
-                    <div className="bg-white/10 rounded-2xl p-6 border border-white/20">
+                  {/* Claim Correction */}
+                  <div className="bg-white/10 rounded-2xl p-6 border border-white/20">
+                    <div className="flex items-center mb-4">
+                      <MessageSquare className="w-5 h-5 text-purple-400 mr-2" />
+                      <h3 className="text-white font-semibold">Corrected Information</h3>
+                    </div>
+                    <div className="text-lg text-gray-200 leading-relaxed">{result.correction}</div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Status */}
+                    <div className={`rounded-2xl p-6 border ${getStatusColor(result.status)}`}>
                       <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-white font-semibold">Credibility Score</h3>
-                        <Zap className="w-5 h-5 text-purple-400" />
+                        <h3 className="font-semibold">Verification Status</h3>
+                        {getStatusIcon(result.status)}
                       </div>
-                      <div className="text-3xl font-bold text-white mb-2">{result.credibilityScore}%</div>
-                      <div className="w-full bg-gray-700 rounded-full h-2">
-                        <div 
-                          className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full transition-all duration-1000"
-                          style={{ width: `${result.credibilityScore }%` }}
-                        ></div>
-                      </div>
+                      <div className="text-2xl font-bold capitalize">{result.status.toLowerCase()}</div>
                     </div>
 
-                    {/* Risk Level */}
-                    <div className={`rounded-2xl p-6 border ${getRiskColor(result.riskLevel)}`}>
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-semibold">Risk Level</h3>
-                        {getRiskIcon(result.riskLevel)}
-                      </div>
-                      <div className="text-2xl font-bold capitalize">{result.riskLevel}</div>
-                    </div>
-
-                    {/* Sources Found */}
+                    {/* Evidence Count */}
                     <div className="bg-white/10 rounded-2xl p-6 border border-white/20">
                       <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-white font-semibold">Sources</h3>
-                        <Eye className="w-5 h-5 text-blue-400" />
+                        <h3 className="text-white font-semibold">Evidence Sources</h3>
+                        <CheckCircle className="w-5 h-5 text-green-400" />
                       </div>
-                      <div className="text-3xl font-bold text-white mb-2">{result.sources}</div>
-                      <div className="text-sm text-gray-300">Verified sources found</div>
+                      <div className="text-2xl font-bold text-white">{result.evidence.length}</div>
+                      <div className="text-sm text-gray-300">Sources found</div>
                     </div>
                   </div>
 
-                  {/* Fact Checks */}
+                  {/* Fact Check Evidence */}
                   <div className="bg-white/10 rounded-2xl p-6 border border-white/20">
                     <h3 className="text-white font-semibold mb-4 flex items-center">
                       <CheckCircle className="w-5 h-5 mr-2 text-green-400" />
-                      Fact Check Results
+                      Supporting Evidence
                     </h3>
                     <div className="space-y-3">
-                      {result.factChecks.map((check, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                          <span className="text-gray-300">{check.claim}</span>
-                          <div className="flex items-center space-x-2">
-                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                              check.status === 'verified' ? 'bg-green-100 text-green-800' :
-                              check.status === 'partially_verified' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {check.status.replace('_', ' ')}
-                            </span>
-                            <span className="text-sm text-gray-400">{Math.floor(check.confidence * 100)}%</span>
+                      {result.evidence.map((proof, index) => (
+                        <div key={index} className="p-4 bg-white/5 rounded-lg border border-white/10">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                              <Link className="w-4 h-4 text-purple-400 flex-shrink-0 mt-1" />
+                              <span className="text-purple-300 font-semibold text-sm">{proof.source}</span>
+                            </div>
+                            {proof.url && (
+                              <a 
+                                href={proof.url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-blue-400 hover:text-blue-300 text-sm underline"
+                              >
+                                View Source
+                              </a>
+                            )}
                           </div>
+                          <p className="text-gray-200 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: proof.text }}></p>
                         </div>
                       ))}
                     </div>
@@ -203,7 +217,7 @@ const MisinformationDetector = () => {
         <section className="py-16 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
-              <h3 className="text-3xl font-bold text-white mb-4">How TruthGuard Works</h3>
+              <h3 className="text-3xl font-bold text-white mb-4">How ClaimCheck Works</h3>
               <p className="text-xl text-gray-300 max-w-2xl mx-auto">
                 Our advanced AI system combines multiple verification techniques to provide accurate results.
               </p>
@@ -251,10 +265,10 @@ const MisinformationDetector = () => {
                 <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
                   <Shield className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-white font-semibold">TruthGuard</span>
+                <span className="text-white font-semibold">ClaimCheck</span>
               </div>
               <div className="text-gray-400 text-sm">
-                © 2025 TruthGuard. Fighting misinformation with AI.
+                © 2025 ClaimCheck. Fighting misinformation with AI.
               </div>
             </div>
           </div>
