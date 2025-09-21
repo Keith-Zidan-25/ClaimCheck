@@ -1,2 +1,4 @@
 *env*
 */corpus/*
+/__pycache__
+*/__pycache__

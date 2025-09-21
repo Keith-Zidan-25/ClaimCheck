@@ -17,9 +17,9 @@ CATEGORIES = [
     "World Politics",
     "Environment"
 ]
-MAX_ARTICLES_PER_CATEGORY = 50
+MAX_ARTICLES_PER_CATEGORY = 10
 
-wiki_wiki = wikipediaapi.Wikipedia("en")
+wiki_wiki = wikipediaapi.Wikipedia(user_agent='VeriFix-FactChecker/1.0 (contact: verifix.web@gmail.com)',language="en")
 corpus_chunks = []
 
 def chunk_text(text, chunk_size=CHUNK_SIZE):
@@ -64,7 +64,7 @@ def fetch_category(category_name):
 def load_corpus():
     for category in CATEGORIES:
         print(f"Fetching articles for category: {category}")
-        articles = fetch_category(category)
+        articles = fetch_category(f"Category:{category}")
         
         for article in tqdm(articles):
             chunks = chunk_text(article.text)

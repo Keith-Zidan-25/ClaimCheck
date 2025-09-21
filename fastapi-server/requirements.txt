@@ -1,9 +1,7 @@
 fastapi
 uvicorn
+openai
 requests
-sentence-transformers
-faiss-cpu
-elasticsearch
 python-dotenv
 wikipedia-api
 tqdm
